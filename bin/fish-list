@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+
+const request = require('request');
+const chalk = require('chalk');
+request({
+    url: 'https://api.github.com/users/fish-template/repos',
+    headers: {
+        "User-Agent": 'fish-cli'
+    }
+}, function(err, res, body) {
+    if (err) {
+        chalk.red(err);
+        process.exit(1);
+    }
+    var bodyParse = JSON.parse(body);
+    if (Array.isArray(bodyParse)) {
+        bodyParse.forEach(function(item) {
+            console.log(
+                ' ' + chalk.yellow('YOUYU :') +
+                ' ' + chalk.blue(item.name) +
+                ' ' + item.description
+            )
+        })
+    }
+
+})
+console.log()
+process.on('exit', function() {
+    console.log()
+})

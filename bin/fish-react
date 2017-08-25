@@ -7,13 +7,19 @@ const chalk = require('chalk');
 const home = require('user-home');
 const download = require('download-git-repo');
 const inquirer = require('inquirer');
+// 生成文件
 const Metalsmith = require('metalsmith');
 const rm = require('rimraf').sync;
 const ora = require('ora');
-/**
- * Usage
- * 
- */
+
+console.log()
+process.on('exit', function() {
+        console.log()
+    })
+    /**
+     * Usage
+     * 
+     */
 var log = console.log;
 program
     .usage('<filename> [options]')
@@ -45,16 +51,27 @@ if (exists(to)) {
     }]).then(function(answer) {
         if (answer.ok) {
             rm(to);
-            DownloadAndGenerate(remoteTmp, localTmp, function(err) {
-                chalk.red(err);
-            })
-
+            getTemplateFromRemoteOrLocal(program.offline);
+        } else {
+            process.exit(1);
         }
     })
 } else {
-    DownloadAndGenerate(remoteTmp, localTmp, function(err) {
-        chalk.red(err);
-    })
+    getTemplateFromRemoteOrLocal(program.offline);
+}
+
+/**
+ * 
+ * @param offline 是否取缓存 
+ */
+function getTemplateFromRemoteOrLocal(offline) {
+    if (offline) {
+        generate(program.type, localTmp, to);
+    } else {
+        DownloadAndGenerate(remoteTmp, localTmp, function(err) {
+            log(chalk.red(err));
+        })
+    }
 }
 /**
  * 
@@ -68,6 +85,7 @@ function DownloadAndGenerate(remoteT, localT, fn) {
     var spinner = ora('get template');
     spinner.start();
     download(remoteT, localT, { clone: 'clone' }, function(err) {
+        log(chalk.green('get templeate success'));
         spinner.stop();
         generate(type, localT, to, function(err) {
             chalk.red(err);
@@ -76,7 +94,7 @@ function DownloadAndGenerate(remoteT, localT, fn) {
     })
 }
 
-function generate(t, src, dest, done) {
+function generate(type, src, dest, done) {
     var metalsmith = new Metalsmith(src);
     metalsmith
         .clean(true)
@@ -84,5 +102,6 @@ function generate(t, src, dest, done) {
         .destination(dest)
         .build(function(err, files) {
             if (err) done(err);
+            log(chalk.green('generate success'));
         })
 }

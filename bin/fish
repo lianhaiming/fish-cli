@@ -8,7 +8,8 @@ const program = require('commander');
 program
     .version(require('../package.json'))
     .usage('<commander> [options]')
-    .command('react [filename]', 'generate a new project of react').alias('re')
+    .command('react [filename]', 'Generate a new project of react').alias('re')
+    .command('list', 'Available official templates')
     // .command('angular [filename]', 'generate a new project of angular').alias('ng')
     // .command('vue [filename]', 'generate a new project of vue')
     .parse(process.argv)
