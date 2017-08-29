@@ -1,0 +1,92 @@
+#!/usr/bin/env node
+
+const program = require('commander');
+const { resolve } = require('path');
+const exists = require('fs').existsSync;
+// command font color
+const chalk = require('chalk');
+const home = require('user-home');
+// 命令行逻辑处理
+const inquirer = require('inquirer');
+// 生成文件
+const generate = require('../lib/generate');
+const download = require('../lib/download');
+const rm = require('rimraf').sync;
+const logger = require('../lib/logger');
+console.log()
+process.on('exit', function() {
+        console.log()
+    })
+    /**
+     * Usage
+     * 
+     */
+var log = console.log;
+program
+    .usage('<filename> [options]')
+    .option('-t  --type [type]', '项目类型', 'react')
+    .option('--offline', 'create a new project from local')
+
+/**
+ * Help
+ */
+program.on('--help', function() {
+        console.log()
+        console.log('  Examples:')
+        console.log()
+        console.log(chalk.gray('    # create a new project with an official template from github'))
+        console.log('    $ fish init my-project -t react')
+        console.log()
+        console.log(chalk.gray('    # create a new project from local'))
+        console.log('    $ vue init my-project -t react --offline')
+        console.log()
+    })
+    .parse(process.argv)
+if (program.args.length < 1) program.help();
+
+// 生成项目名称
+var name = program.args[0];
+// 生成项目类型
+var type = program.type;
+// 生成项目路径
+var to = resolve(name);
+const GITUSER = 'fish-team';
+// 本地模板存放的路径
+var localTmp = resolve(home, GITUSER, 'templates', type);
+// 线上存放模板的路径
+var remoteTmp = `${GITUSER}/template-${type}`;
+
+if (exists(to)) {
+    inquirer.prompt([{
+        type: 'confirm',
+        message: '项目已存在，是否覆盖？',
+        name: 'ok'
+    }]).then(function(answer) {
+        if (answer.ok) {
+            rm(to);
+            getProjectFromRemoteOrLocal(program.offline);
+        } else {
+            process.exit(1);
+        }
+    })
+} else {
+    getProjectFromRemoteOrLocal(program.offline);
+}
+
+/**
+ * 
+ * @param offline 是否取缓存 
+ */
+function getProjectFromRemoteOrLocal(offline) {
+    if (offline) {
+        generate(type, localTmp, to, function(err) {
+            if (err) logger.fail(err);
+        });
+    } else {
+        download(remoteTmp, localTmp, function() {
+            generate(type, localTmp, to, function(err) {
+                if (err) logger.fail(err);
+            });
+        })
+    }
+}

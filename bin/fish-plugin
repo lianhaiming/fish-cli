@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+
+const generate = require('../lib/generate');
+const download = require('../lib/download');
+const program = require('commander');
+const resolve = require('path').resolve;
+const exists = require('fs').existsSync;
+const inquirer = require('inquirer');
+const rm = require('rimraf').sync;
+const logger = require('../lib/logger');
+const home = require('user-home');
+
+program
+    .usage('<command> [pluginname] [options]')
+    .option('--offline', 'get plugin from local')
+    .parse(process.argv)
+
+/**
+ * Help
+ */
+
+program.on('--help', function() {
+    console.log()
+    console.log('  Examples:')
+    console.log()
+    console.log(chalk.gray('    # get plugin from github or local'))
+    console.log('    $ fish plugin datePicker [...plugin]')
+    console.log()
+})
+
+if (!Array.isArray(program.args) && program.args.length === 0) program.help();
+
+// 获取的插件
+var names = program.args;
+
+// git用户
+const GITUSER = 'fish-team';
+var to;
+var localTmp;
+var remoteTmp;
+var name;
+names.forEach(function(rname, index) {
+    name = rname;
+    // 生成插件路径
+    to = resolve(name);
+    // 本地插件存放路径
+    localTmp = resolve(home, GITUSER, 'plugins', name);
+    // 线上插件存放路径
+    remoteTmp = `${GITUSER}/plugin-${name}`;
+    if (exists(to)) {
+        inquirer.prompt([{
+            type: 'confirm',
+            message: `${name}插件已存在，是否覆盖？`,
+            name: 'ok'
+        }]).then(function(answer) {
+            if (answer.ok) {
+                rm(to);
+                getProjectFromRemoteOrLocal(program.offline);
+            } else {
+                process.exit(1);
+            }
+        })
+    } else {
+        getProjectFromRemoteOrLocal(program.offline);
+    }
+})
+
+/**
+ * 
+ * @param offline 是否取缓存 
+ */
+function getProjectFromRemoteOrLocal(offline) {
+    if (offline) {
+        generate(name, localTmp, to, function(err) {
+            if (err) logger.fail(err);
+        });
+    } else {
+        download(remoteTmp, localTmp, function() {
+            generate(name, localTmp, to, function(err) {
+                if (err) logger.fail(err);
+            });
+        })
+    }
+}

@@ -2,28 +2,72 @@
 
 const request = require('request');
 const chalk = require('chalk');
+const logger = require('../lib/logger');
+const program = require('commander');
+
+/**
+ * Usage
+ */
+
+program
+    .usage('[option]')
+    .option('-a --all', '展示所有的项目模板和插件')
+    .option('-p --plugin', '展示原有的插件')
+    .option('-t --template', '展示原有的项目模板')
+    .parse(process.argv)
 request({
-    url: 'https://api.github.com/users/fish-template/repos',
+    url: 'https://api.github.com/users/fish-team/repos',
     headers: {
         "User-Agent": 'fish-cli'
     }
 }, function(err, res, body) {
-    if (err) {
-        chalk.red(err);
-        process.exit(1);
-    }
+    if (err) logger.fail(err);
     var bodyParse = JSON.parse(body);
-    if (Array.isArray(bodyParse)) {
-        bodyParse.forEach(function(item) {
-            console.log(
-                ' ' + chalk.yellow('YOUYU :') +
-                ' ' + chalk.blue(item.name) +
-                ' ' + item.description
-            )
+    if (program.template) {
+        showList(filter(bodyParse, 'template-'), '可用模板列表：');
+    } else if (program.plugin) {
+        showList(filter(bodyParse, 'plugin-'), '可用插件列表：');
+    } else {
+        showList(filter(bodyParse, 'template-'), '可用模板列表：');
+        showList(filter(bodyParse, 'plugin-'), '可用插件列表：')
+    }
+})
+
+function showList(arr, tip) {
+    console.log(chalk.green(tip));
+    console.log();
+    if (arr.length === 0) {
+        console.log(chalk.yellow(' Desc: ') + chalk.blue('Empty'));
+    }
+    arr.forEach(function(item) {
+        console.log(
+            ' ' + chalk.yellow('Name:') +
+            ' ' + chalk.blue(item.name) +
+            ' ' + chalk.yellow('Desc:') +
+            ' ' + item.description
+        );
+        console.log();
+    })
+}
+/**
+ * 
+ * @param arr 
+ * @param type 
+ */
+function filter(arr, type) {
+    if (!Array.isArray(arr) || !type) return [];
+    if (type) {
+        arr = arr.filter(function(item, index) {
+            return item.name && new RegExp(type).test(item.name);
         })
     }
-
-})
+    return arr.map(function(item, index) {
+        return {
+            name: item.name && item.name.replace(type, ''),
+            description: item.description
+        }
+    })
+}
 console.log()
 process.on('exit', function() {
     console.log()

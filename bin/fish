@@ -8,8 +8,7 @@ const program = require('commander');
 program
     .version(require('../package.json'))
     .usage('<commander> [options]')
-    .command('react [filename]', 'Generate a new project of react').alias('re')
-    .command('list', 'Available official templates')
-    // .command('angular [filename]', 'generate a new project of angular').alias('ng')
-    // .command('vue [filename]', 'generate a new project of vue')
+    .command('init [filename]', '生成项目基础结构').alias('i')
+    .command('list', '查询支持的模板和插件').alias('l')
+    .command('plugin', '获取插件').alias('p')
     .parse(process.argv)
