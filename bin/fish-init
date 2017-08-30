@@ -19,7 +19,6 @@ process.on('exit', function() {
     })
     /**
      * Usage
-     * 
      */
 var log = console.log;
 program
@@ -81,11 +80,15 @@ function getProjectFromRemoteOrLocal(offline) {
     if (offline) {
         generate(type, localTmp, to, function(err) {
             if (err) logger.fail(err);
+            console.log(chalk.green(`~ generate ${name} project success`));
         });
     } else {
-        download(remoteTmp, localTmp, function() {
+        download(remoteTmp, localTmp, function(e) {
+            if (e) logger.fail(e);
+            console.log(chalk.green(`~ download ${name} preject success`));
             generate(type, localTmp, to, function(err) {
                 if (err) logger.fail(err);
+                console.log(chalk.green(`~ generate ${name} preject success`));
             });
         })
     }

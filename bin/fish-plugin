@@ -9,6 +9,7 @@ const inquirer = require('inquirer');
 const rm = require('rimraf').sync;
 const logger = require('../lib/logger');
 const home = require('user-home');
+const chalk = require('chalk');
 
 program
     .usage('<command> [pluginname] [options]')
@@ -31,39 +32,33 @@ program.on('--help', function() {
 if (!Array.isArray(program.args) && program.args.length === 0) program.help();
 
 // 获取的插件
-var names = program.args;
+var name = program.args[0];
 
 // git用户
 const GITUSER = 'fish-team';
-var to;
-var localTmp;
-var remoteTmp;
-var name;
-names.forEach(function(rname, index) {
-    name = rname;
-    // 生成插件路径
-    to = resolve(name);
-    // 本地插件存放路径
-    localTmp = resolve(home, GITUSER, 'plugins', name);
-    // 线上插件存放路径
-    remoteTmp = `${GITUSER}/plugin-${name}`;
-    if (exists(to)) {
-        inquirer.prompt([{
-            type: 'confirm',
-            message: `${name}插件已存在，是否覆盖？`,
-            name: 'ok'
-        }]).then(function(answer) {
-            if (answer.ok) {
-                rm(to);
-                getProjectFromRemoteOrLocal(program.offline);
-            } else {
-                process.exit(1);
-            }
-        })
-    } else {
-        getProjectFromRemoteOrLocal(program.offline);
-    }
-})
+// 生成插件路径
+var to = resolve(name);
+// 本地插件存放路径
+var localTmp = resolve(home, GITUSER, 'plugins', name);
+// 线上插件存放路径
+var remoteTmp = `${GITUSER}/plugin-${name}`;
+if (exists(to)) {
+    inquirer.prompt([{
+        type: 'confirm',
+        message: `${name}插件已存在，是否覆盖？`,
+        name: 'ok'
+    }]).then(function(answer) {
+        if (answer.ok) {
+            rm(to);
+            getProjectFromRemoteOrLocal(program.offline);
+        } else {
+            process.exit(1);
+        }
+    })
+} else {
+    getProjectFromRemoteOrLocal(program.offline);
+}
+
 
 /**
  * 
@@ -73,11 +68,17 @@ function getProjectFromRemoteOrLocal(offline) {
     if (offline) {
         generate(name, localTmp, to, function(err) {
             if (err) logger.fail(err);
+            console.log(chalk.green(`~ generate ${name} plugin success`));
+
         });
     } else {
-        download(remoteTmp, localTmp, function() {
+        download(remoteTmp, localTmp, function(e) {
+            if (e) logger.fail(e);
+            console.log(chalk.green(`~ download ${name} plugin success`));
             generate(name, localTmp, to, function(err) {
                 if (err) logger.fail(err);
+                console.log();
+                console.log(chalk.green(`~ generate ${name} plugin success`));
             });
         })
     }
